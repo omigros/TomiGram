@@ -1,7 +1,7 @@
 'use strict';
 
 // TomiGram-specific Electron host. New implementation dated 2026-11-25.
-const { app, BrowserWindow, WebContentsView, ipcMain, shell, session, dialog, screen } = require('electron');
+const { app, BrowserWindow, WebContentsView, ipcMain, shell, session, dialog, screen, Tray, Menu, nativeImage } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 const { isSafeExternalUrl, isTrustedNavigation } = require('./navigation.cjs');
@@ -17,6 +17,7 @@ const MESSENGERS = {
 };
 
 let windowRef;
+let trayRef = null;
 const views = new Map();
 const loadedViews = new Set();
 const recoveryTimers = new Map();
@@ -101,6 +102,69 @@ function layoutViews() {
 function setActiveView(id) {
   for (const [key, view] of views) view.setVisible(key === id && loadedViews.has(key));
   activeMessenger = id;
+  updateTrayMenu();
+}
+
+function showMainWindow() {
+  if (!windowRef || windowRef.isDestroyed()) {
+    createWindow();
+    return;
+  }
+  if (windowRef.isMinimized()) windowRef.restore();
+  windowRef.show();
+  windowRef.focus();
+}
+
+function createTray() {
+  if (trayRef) return;
+  const iconPath = path.join(__dirname, '..', 'assets', 'tomigram-tray.png');
+  const icon = nativeImage.createFromPath(iconPath);
+  if (icon.isEmpty()) {
+    console.error('[TomiGram] Tray icon could not be loaded:', iconPath);
+    return;
+  }
+  trayRef = new Tray(icon);
+  trayRef.setToolTip(APP_NAME);
+  trayRef.on('click', () => {
+    if (windowRef && windowRef.isVisible()) windowRef.hide();
+    else showMainWindow();
+  });
+  trayRef.on('double-click', showMainWindow);
+  updateTrayMenu();
+}
+
+function updateTrayMenu() {
+  if (!trayRef) return;
+  trayRef.setContextMenu(Menu.buildFromTemplate([
+    { label: 'Open TomiGram', click: showMainWindow },
+    { type: 'separator' },
+    {
+      label: 'Telegram',
+      type: 'radio',
+      checked: activeMessenger === 'telegram',
+      click: () => {
+        showMainWindow();
+        void switchMessenger('telegram');
+      },
+    },
+    {
+      label: 'VK',
+      type: 'radio',
+      checked: activeMessenger === 'vk',
+      click: () => {
+        showMainWindow();
+        void switchMessenger('vk');
+      },
+    },
+    { type: 'separator' },
+    {
+      label: 'Quit TomiGram',
+      click: () => {
+        isQuitting = true;
+        app.quit();
+      },
+    },
+  ]));
 }
 
 async function switchMessenger(id) {
@@ -310,7 +374,13 @@ function createWindow() {
     scheduleWindowStateSave();
   });
   windowRef.on('move', scheduleWindowStateSave);
-  windowRef.on('close', saveWindowState);
+  windowRef.on('close', (event) => {
+    saveWindowState();
+    if (trayRef && !isQuitting) {
+      event.preventDefault();
+      windowRef.hide();
+    }
+  });
   windowRef.on('closed', () => {
     if (windowStateSaveTimer) clearTimeout(windowStateSaveTimer);
     windowStateSaveTimer = null;
@@ -338,13 +408,17 @@ app.whenReady().then(() => {
   ipcMain.handle('messenger:switch', (_event, id) => switchMessenger(id));
   ipcMain.handle('messenger:active', () => activeMessenger);
   createWindow();
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  });
+  createTray();
+  app.setAppUserModelId('com.tomigram.desktop');
+  app.on('activate', () => showMainWindow());
 });
 
 app.on('before-quit', () => {
   isQuitting = true;
+  if (trayRef) {
+    trayRef.destroy();
+    trayRef = null;
+  }
   for (const timer of recoveryTimers.values()) clearTimeout(timer);
   recoveryTimers.clear();
   for (const timer of recoveryStableTimers.values()) clearTimeout(timer);
