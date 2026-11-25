@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:;">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TomiGram</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">T</span><span>TomiGram</span></div>
+    <nav class="switcher" aria-label="Выбор мессенджера">
+      <button class="messenger active" data-messenger="telegram" aria-pressed="true">
+        <span class="telegram-icon">➤</span><span>Telegram</span>
+      </button>
+      <button class="messenger" data-messenger="vk" aria-pressed="false">
+        <span class="vk-icon">ᴠκ</span><span>ВКонтакте</span>
+      </button>
+    </nav>
+    <div class="topbar-spacer"></div>
+    <span class="status"><i></i> Локальные сессии</span>
+  </header>
+  <main class="stage">
+    <div class="transition-layer" aria-hidden="true"></div>
+    <div class="loading-note">Подключение к мессенджеру…</div>
+  </main>
+  <script src="./renderer.js"></script>
+</body>
+</html>
