@@ -24,7 +24,12 @@ test('allows official Telegram and VK origins and their subdomains', () => {
   }
 });
 
-test('does not trust insecure HTTP origins even on official hostnames', () => {\n  assert.equal(isTrustedNavigation('http://vk.com/im'), false);\n  assert.equal(isTrustedNavigation('http://web.telegram.org/a/'), false);\n});\n\ntest('does not trust lookalike or unrelated hosts', () => {
+test('does not trust insecure HTTP origins even on official hostnames', () => {
+  assert.equal(isTrustedNavigation('http://vk.com/im'), false);
+  assert.equal(isTrustedNavigation('http://web.telegram.org/a/'), false);
+});
+
+test('does not trust lookalike or unrelated hosts', () => {
   for (const url of [
     'https://vk.com.attacker.example/',
     'https://telegram.org.attacker.example/',
