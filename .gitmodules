@@ -1,0 +1,3 @@
+[submodule "upstream/abudjagram"]
+	path = upstream/abudjagram
+	url = https://github.com/omigros/abudjagram.git
