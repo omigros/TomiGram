@@ -75,3 +75,25 @@ test('sanitizes suggested download names for cross-platform save dialogs', () =>
 test('bounds suggested download filename length', () => {
   assert.equal(sanitizeDownloadFilename('a'.repeat(300)).length, 180);
 });
+
+const {
+  getRecoveryDelay,
+  isAutomaticallyAllowedPermission,
+  MAX_RECOVERY_DELAY_MS,
+} = require('../electron/runtime-policy.cjs');
+
+test('renderer recovery delay backs off and remains bounded', () => {
+  assert.equal(getRecoveryDelay(0), 1000);
+  assert.equal(getRecoveryDelay(1), 2000);
+  assert.equal(getRecoveryDelay(2), 4000);
+  assert.equal(getRecoveryDelay(20), MAX_RECOVERY_DELAY_MS);
+});
+
+test('only trusted-origin desktop notifications are automatically permitted', () => {
+  assert.equal(isAutomaticallyAllowedPermission('notifications', 'https://web.telegram.org/a/', isTrustedNavigation), true);
+  assert.equal(isAutomaticallyAllowedPermission('notifications', 'https://vk.com/im', isTrustedNavigation), true);
+  assert.equal(isAutomaticallyAllowedPermission('notifications', 'https://evil.example', isTrustedNavigation), false);
+  assert.equal(isAutomaticallyAllowedPermission('media', 'https://vk.com/im', isTrustedNavigation), false);
+  assert.equal(isAutomaticallyAllowedPermission('camera', 'https://web.telegram.org/a/', isTrustedNavigation), false);
+  assert.equal(isAutomaticallyAllowedPermission('geolocation', 'https://vk.com/im', isTrustedNavigation), false);
+});
