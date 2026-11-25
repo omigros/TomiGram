@@ -10,7 +10,9 @@ Last updated: 2026-11-25.
 - Telegram Web and VK Messages entry URLs.
 - WebContentsView instances kept alive while switching.
 - Minimal context-isolated preload bridge.
-- External HTTP(S) popups are handed to the system browser.
+- External HTTP(S) popups and non-allowlisted top-level navigations/redirects are handed to the system browser.
+- `Ctrl+1` / `Ctrl+2` messenger switching when an embedded messenger view has keyboard focus.
+- Switch-timer cancellation and child WebContents cleanup during window teardown.
 - Windows NSIS packaging configuration and a Windows CI workflow.
 
 ## Not yet completed
