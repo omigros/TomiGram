@@ -5,7 +5,7 @@ const { app, BrowserWindow, WebContentsView, ipcMain, shell, session } = require
 const path = require('node:path');
 
 const APP_NAME = 'TomiGram';
-const TOPBAR_HEIGHT = 72;
+const TOPBAR_HEIGHT = 64;
 const TRANSITION_MS = 180;
 const MESSENGERS = {
   telegram: { url: 'https://web.telegram.org/a/', partition: 'persist:tomigram-telegram' },
