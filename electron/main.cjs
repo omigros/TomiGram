@@ -125,10 +125,7 @@ function createTray() {
   }
   trayRef = new Tray(icon);
   trayRef.setToolTip(APP_NAME);
-  trayRef.on('click', () => {
-    if (windowRef && windowRef.isVisible()) windowRef.hide();
-    else showMainWindow();
-  });
+  trayRef.on('click', showMainWindow);
   trayRef.on('double-click', showMainWindow);
   updateTrayMenu();
 }
