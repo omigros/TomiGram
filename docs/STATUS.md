@@ -19,7 +19,8 @@ Last updated: 2026-11-25.
 - Chromium renderer recovery retries failed/crashed messenger views with bounded exponential backoff; the delay resets after 60 seconds of stable loading.
 - Desktop notifications are permitted only for trusted Telegram/VK origins. Other permission types are denied by default.
 - Camera/microphone/media requests from trusted messenger pages require an explicit native Allow/Deny prompt; geolocation and other unimplemented permissions remain denied.
-- Regression tests cover download filename safety, permission policy, and bounded recovery backoff.
+- Window geometry and maximized state persist in the app's user-data directory; restoration clamps the window to a currently connected display and falls back safely if a monitor was removed.
+- Regression tests cover download filename safety, permission policy, bounded recovery backoff, and window-state normalization.
 - Windows NSIS installer successfully produced by GitHub Actions; CI artifact is available from the workflow run.
 
 ## Important architecture decision
@@ -34,7 +35,7 @@ Therefore TomiGram keeps the official Telegram Web page inside its own isolated 
 - Verify that VK authentication and media/resource host behavior are compatible with the navigation policy.
 - Validate notification delivery and camera/microphone prompts during real Telegram/VK calls. Download handling and renderer recovery also need interactive validation with real attachments and induced renderer crashes.
 - Add focused automated checks for view switching and navigation behavior inside Electron.
-- Improve app icon, tray behavior, window state persistence, and installer metadata.
+- Improve app icon, tray behavior, and installer metadata.
 - Verify the packaged installer on an actual Windows 10 machine.
 - Decide which upstream settings/theme elements can be adapted without pulling in the upstream Telegram API client.
 
