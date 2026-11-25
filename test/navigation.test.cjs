@@ -113,7 +113,7 @@ test('restores a valid window position and maximized state', () => {
 
 test('clamps saved window bounds to a connected display', () => {
   const state = normalizeWindowState(
-    { bounds: { x: 5000, y: 5000, width: 1600, height: 1000 }, maximized: false },
+    { bounds: { x: 1200, y: 650, width: 1600, height: 1000 }, maximized: false },
     [{ workArea: { x: 0, y: 0, width: 1280, height: 720 } }],
   );
   assert.deepEqual(state, {
