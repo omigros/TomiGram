@@ -20,6 +20,7 @@ const views = new Map();
 const loadedViews = new Set();
 const recoveryTimers = new Map();
 const recoveryAttempts = new Map();
+const recoveryStableTimers = new Map();
 let isQuitting = false;
 let activeMessenger = 'telegram';
 let switchInProgress = false;
@@ -180,6 +181,9 @@ function scheduleViewRecovery(id, reason) {
 
   loadedViews.delete(id);
   view.setVisible(false);
+  const stableTimer = recoveryStableTimers.get(id);
+  if (stableTimer) clearTimeout(stableTimer);
+  recoveryStableTimers.delete(id);
   const attempt = recoveryAttempts.get(id) || 0;
   const delay = getRecoveryDelay(attempt);
   recoveryAttempts.set(id, attempt + 1);
@@ -216,7 +220,12 @@ function createMessengerView(id, config) {
     const timer = recoveryTimers.get(id);
     if (timer) clearTimeout(timer);
     recoveryTimers.delete(id);
-    recoveryAttempts.delete(id);
+    const stableTimer = recoveryStableTimers.get(id);
+    if (stableTimer) clearTimeout(stableTimer);
+    recoveryStableTimers.set(id, setTimeout(() => {
+      recoveryStableTimers.delete(id);
+      recoveryAttempts.delete(id);
+    }, 60000));
     loadedViews.add(id);
     if (id === activeMessenger && windowRef && !windowRef.isDestroyed()) {
       view.setVisible(true);
@@ -268,6 +277,8 @@ function createWindow() {
     switchInProgress = false;
     for (const timer of recoveryTimers.values()) clearTimeout(timer);
     recoveryTimers.clear();
+    for (const timer of recoveryStableTimers.values()) clearTimeout(timer);
+    recoveryStableTimers.clear();
     recoveryAttempts.clear();
     for (const view of views.values()) view.webContents.close();
     views.clear();
@@ -294,6 +305,8 @@ app.on('before-quit', () => {
   isQuitting = true;
   for (const timer of recoveryTimers.values()) clearTimeout(timer);
   recoveryTimers.clear();
+  for (const timer of recoveryStableTimers.values()) clearTimeout(timer);
+  recoveryStableTimers.clear();
   if (switchTimer) clearTimeout(switchTimer);
   switchTimer = null;
 });
