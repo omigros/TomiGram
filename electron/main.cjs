@@ -34,7 +34,21 @@ function attachSafeExternalHandling(view) {
   });
 
   view.webContents.on('will-navigate', (event, url) => {
-    if (!isWebUrl(url)) event.preventDefault();
+    if (!isWebUrl(url)) {
+      event.preventDefault();
+      return;
+    }
+    try {
+      const destination = new URL(url);
+      const trusted = ['web.telegram.org', 'telegram.org', 't.me', 'telegram.me', 'vk.com', 'vk.ru', 'userapi.com', 'vkuseraudio.net'];
+      const allowed = trusted.some((host) => destination.hostname === host || destination.hostname.endsWith(`.${host}`));
+      if (!allowed) {
+        event.preventDefault();
+        void shell.openExternal(url);
+      }
+    } catch {
+      event.preventDefault();
+    }
   });
 }
 
@@ -63,10 +77,15 @@ async function switchMessenger(id) {
 
   for (const view of views.values()) view.setVisible(false);
 
-  setTimeout(() => {
+  switchTimer = setTimeout(() => {
+    switchTimer = null;
+    if (!windowRef || windowRef.isDestroyed()) {
+      switchInProgress = false;
+      return;
+    }
     setActiveView(id);
     layoutViews();
-    windowRef?.webContents.send('messenger:changed', id);
+    windowRef.webContents.send('messenger:changed', id);
     switchInProgress = false;
   }, TRANSITION_MS);
 }
@@ -108,7 +127,14 @@ function createWindow() {
 
   windowRef.loadFile(path.join(__dirname, '..', 'ui', 'index.html'));
   windowRef.on('resize', layoutViews);
-  windowRef.on('closed', () => { windowRef = null; });
+  windowRef.on('closed', () => {
+    if (switchTimer) clearTimeout(switchTimer);
+    switchTimer = null;
+    switchInProgress = false;
+    for (const view of views.values()) view.webContents.close();
+    views.clear();
+    windowRef = null;
+  });
 
   windowRef.webContents.once('did-finish-load', () => {
     for (const [id, config] of Object.entries(MESSENGERS)) createMessengerView(id, config);
@@ -123,6 +149,11 @@ app.whenReady().then(() => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+});
+
+app.on('before-quit', () => {
+  if (switchTimer) clearTimeout(switchTimer);
+  switchTimer = null;
 });
 
 app.on('window-all-closed', () => {
