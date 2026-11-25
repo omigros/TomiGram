@@ -1,9 +1,10 @@
 'use strict';
 
 // TomiGram-specific Electron host. New implementation dated 2026-11-25.
-const { app, BrowserWindow, WebContentsView, ipcMain, shell, session } = require('electron');
+const { app, BrowserWindow, WebContentsView, ipcMain, shell, session, dialog } = require('electron');
 const path = require('node:path');
 const { isSafeExternalUrl, isTrustedNavigation } = require('./navigation.cjs');
+const { sanitizeDownloadFilename } = require('./downloads.cjs');
 
 const APP_NAME = 'TomiGram';
 const TOPBAR_HEIGHT = 64;
@@ -83,8 +84,46 @@ async function switchMessenger(id) {
   }, TRANSITION_MS);
 }
 
+function configureDownloads(partitionSession, messengerId) {
+  partitionSession.on('will-download', (event, item, sourceContents) => {
+    const sourceUrl = sourceContents?.getURL() || '';
+    if (!isTrustedNavigation(sourceUrl)) {
+      item.cancel();
+      return;
+    }
+
+    item.pause();
+    const defaultPath = path.join(
+      app.getPath('downloads'),
+      sanitizeDownloadFilename(item.getFilename()),
+    );
+    const options = {
+      title: `Save ${messengerId} download`,
+      defaultPath,
+      buttonLabel: 'Save',
+    };
+    const parent = windowRef && !windowRef.isDestroyed() ? windowRef : null;
+    const prompt = parent
+      ? dialog.showSaveDialog(parent, options)
+      : dialog.showSaveDialog(options);
+
+    prompt.then(({ canceled, filePath }) => {
+      if (canceled || !filePath) {
+        item.cancel();
+        return;
+      }
+      item.setSavePath(filePath);
+      item.resume();
+    }).catch((error) => {
+      console.error(`[TomiGram] Download prompt failed for ${messengerId}:`, error);
+      item.cancel();
+    });
+  });
+}
+
 function createMessengerView(id, config) {
   const partitionSession = session.fromPartition(config.partition);
+  configureDownloads(partitionSession, id);
   const view = new WebContentsView({
     webPreferences: {
       session: partitionSession,
