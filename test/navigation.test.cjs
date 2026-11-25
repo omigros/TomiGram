@@ -61,3 +61,17 @@ test('accepts only exact host or dot-delimited subdomain matches', () => {
   assert.equal(isTrustedHost('notvk.com'), false);
   assert.equal(isTrustedHost('vk.com.evil.test'), false);
 });
+
+const { sanitizeDownloadFilename } = require('../electron/downloads.cjs');
+
+test('sanitizes suggested download names for cross-platform save dialogs', () => {
+  assert.equal(sanitizeDownloadFilename('../../report.pdf'), 'report.pdf');
+  assert.equal(sanitizeDownloadFilename('folder\\\\secret.txt'), 'secret.txt');
+  assert.equal(sanitizeDownloadFilename('bad:name?.txt'), 'bad_name_.txt');
+  assert.equal(sanitizeDownloadFilename('   '), 'download');
+  assert.equal(sanitizeDownloadFilename('CON.txt'), '_CON.txt');
+});
+
+test('bounds suggested download filename length', () => {
+  assert.equal(sanitizeDownloadFilename('a'.repeat(300)).length, 180);
+});
