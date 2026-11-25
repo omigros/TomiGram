@@ -20,7 +20,8 @@ Last updated: 2026-11-25.
 - Desktop notifications are permitted only for trusted Telegram/VK origins. Other permission types are denied by default.
 - Camera/microphone/media requests from trusted messenger pages require an explicit native Allow/Deny prompt; geolocation and other unimplemented permissions remain denied.
 - Window geometry and maximized state persist in the app's user-data directory; restoration clamps the window to a currently connected display and falls back safely if a monitor was removed.
-- Windows system tray provides Open, Telegram, VK, and Quit actions. Tray click toggles the window; closing the window hides it to the tray rather than terminating the app.
+- Windows system tray provides Open, Telegram, VK, and Quit actions. Tray click restores the window; closing the window hides it to the tray rather than terminating the app.
+- Dedicated TomiGram tray PNG and Windows ICO application/installer icon are included in the packaged files.
 - Regression tests cover download filename safety, permission policy, bounded recovery backoff, and window-state normalization.
 - Windows NSIS installer successfully produced by GitHub Actions; CI artifact is available from the workflow run.
 
@@ -36,7 +37,7 @@ Therefore TomiGram keeps the official Telegram Web page inside its own isolated 
 - Verify that VK authentication and media/resource host behavior are compatible with the navigation policy.
 - Validate notification delivery and camera/microphone prompts during real Telegram/VK calls. Download handling and renderer recovery also need interactive validation with real attachments and induced renderer crashes.
 - Add focused automated checks for view switching and navigation behavior inside Electron.
-- Add a dedicated installer/application icon and refine installer metadata.
+- Refine installer metadata and validate the icon on Windows 10 taskbar and Start menu.
 - Verify the packaged installer on an actual Windows 10 machine.
 - Decide which upstream settings/theme elements can be adapted without pulling in the upstream Telegram API client.
 
