@@ -14,7 +14,7 @@ Last updated: 2026-11-25.
 - Short native-view switching delay and renderer transition overlay.
 - Original Abudjagram pattern asset referenced by the TomiGram shell.
 - Full Abudjagram source pinned as a Git submodule at commit `948713b00e7012f957c113130bdaaa97ac987bec`.
-- Four navigation-security regression tests pass under Node.js 24.
+- Five navigation-security regression tests pass under Node.js 24; Node syntax checks cover the Electron main/preload, navigation helper, and renderer.
 - Windows NSIS installer successfully produced by GitHub Actions; CI artifact is available from the workflow run.
 
 ## Important architecture decision
