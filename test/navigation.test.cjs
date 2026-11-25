@@ -80,6 +80,7 @@ const {
   getRecoveryDelay,
   isAutomaticallyAllowedPermission,
   MAX_RECOVERY_DELAY_MS,
+  normalizeWindowState,
 } = require('../electron/runtime-policy.cjs');
 
 test('renderer recovery delay backs off and remains bounded', () => {
@@ -96,4 +97,38 @@ test('only trusted-origin desktop notifications are automatically permitted', ()
   assert.equal(isAutomaticallyAllowedPermission('media', 'https://vk.com/im', isTrustedNavigation), false);
   assert.equal(isAutomaticallyAllowedPermission('camera', 'https://web.telegram.org/a/', isTrustedNavigation), false);
   assert.equal(isAutomaticallyAllowedPermission('geolocation', 'https://vk.com/im', isTrustedNavigation), false);
+});
+
+
+test('restores a valid window position and maximized state', () => {
+  const state = normalizeWindowState(
+    { bounds: { x: 120, y: 80, width: 1200, height: 800 }, maximized: true },
+    [{ workArea: { x: 0, y: 0, width: 1920, height: 1080 } }],
+  );
+  assert.deepEqual(state, {
+    bounds: { x: 120, y: 80, width: 1200, height: 800 },
+    maximized: true,
+  });
+});
+
+test('clamps saved window bounds to a connected display', () => {
+  const state = normalizeWindowState(
+    { bounds: { x: 5000, y: 5000, width: 1600, height: 1000 }, maximized: false },
+    [{ workArea: { x: 0, y: 0, width: 1280, height: 720 } }],
+  );
+  assert.deepEqual(state, {
+    bounds: { x: 0, y: 0, width: 1280, height: 720 },
+    maximized: false,
+  });
+});
+
+test('falls back to default bounds when the saved monitor is disconnected', () => {
+  const state = normalizeWindowState(
+    { bounds: { x: -4000, y: 0, width: 1200, height: 800 }, maximized: true },
+    [{ workArea: { x: 0, y: 0, width: 1920, height: 1080 } }],
+  );
+  assert.deepEqual(state, {
+    bounds: { x: 100, y: 100, width: 1360, height: 900 },
+    maximized: true,
+  });
 });
