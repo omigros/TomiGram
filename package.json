@@ -33,7 +33,8 @@
       "target": [
         "nsis"
       ],
-      "artifactName": "TomiGram-Setup-${version}.${ext}"
+      "artifactName": "TomiGram-Setup-${version}.${ext}",
+      "icon": "assets/tomigram.ico"
     },
     "nsis": {
       "oneClick": false,
