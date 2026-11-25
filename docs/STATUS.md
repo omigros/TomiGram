@@ -16,6 +16,10 @@ Last updated: 2026-11-25.
 - Full Abudjagram source pinned as a Git submodule at commit `948713b00e7012f957c113130bdaaa97ac987bec`.
 - Navigation and download-filename regression tests run under Node.js 24; syntax checks cover the Electron main/preload, navigation and download helpers, and renderer.
 - Messenger downloads pause before writing, require an explicit native Save dialog, use a sanitized suggested filename, and reject download requests originating from untrusted top-level pages.
+- Chromium renderer recovery retries failed/crashed messenger views with bounded exponential backoff; the delay resets after 60 seconds of stable loading.
+- Desktop notifications are permitted only for trusted Telegram/VK origins. Other permission types are denied by default.
+- Camera/microphone/media requests from trusted messenger pages require an explicit native Allow/Deny prompt; geolocation and other unimplemented permissions remain denied.
+- Regression tests cover download filename safety, permission policy, and bounded recovery backoff.
 - Windows NSIS installer successfully produced by GitHub Actions; CI artifact is available from the workflow run.
 
 ## Important architecture decision
@@ -28,7 +32,7 @@ Therefore TomiGram keeps the official Telegram Web page inside its own isolated 
 
 - Validate Telegram and VK sign-in, cookies, reloads, and persistence interactively on Windows 10.
 - Verify that VK authentication and media/resource host behavior are compatible with the navigation policy.
-- Implement permission prompts, notifications, media-device permissions, and crash/reload recovery. Download handling is implemented but still needs interactive validation with real Telegram/VK attachments.
+- Validate notification delivery and camera/microphone prompts during real Telegram/VK calls. Download handling and renderer recovery also need interactive validation with real attachments and induced renderer crashes.
 - Add focused automated checks for view switching and navigation behavior inside Electron.
 - Improve app icon, tray behavior, window state persistence, and installer metadata.
 - Verify the packaged installer on an actual Windows 10 machine.
