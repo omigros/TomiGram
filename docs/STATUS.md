@@ -14,7 +14,8 @@ Last updated: 2026-11-25.
 - Short native-view switching delay and renderer transition overlay.
 - Original Abudjagram pattern asset referenced by the TomiGram shell.
 - Full Abudjagram source pinned as a Git submodule at commit `948713b00e7012f957c113130bdaaa97ac987bec`.
-- Five navigation-security regression tests pass under Node.js 24; Node syntax checks cover the Electron main/preload, navigation helper, and renderer.
+- Navigation and download-filename regression tests run under Node.js 24; syntax checks cover the Electron main/preload, navigation and download helpers, and renderer.
+- Messenger downloads pause before writing, require an explicit native Save dialog, use a sanitized suggested filename, and reject download requests originating from untrusted top-level pages.
 - Windows NSIS installer successfully produced by GitHub Actions; CI artifact is available from the workflow run.
 
 ## Important architecture decision
@@ -27,7 +28,7 @@ Therefore TomiGram keeps the official Telegram Web page inside its own isolated 
 
 - Validate Telegram and VK sign-in, cookies, reloads, and persistence interactively on Windows 10.
 - Verify that VK authentication and media/resource host behavior are compatible with the navigation policy.
-- Implement download handling, permission prompts, notifications, media-device permissions, and crash/reload recovery.
+- Implement permission prompts, notifications, media-device permissions, and crash/reload recovery. Download handling is implemented but still needs interactive validation with real Telegram/VK attachments.
 - Add focused automated checks for view switching and navigation behavior inside Electron.
 - Improve app icon, tray behavior, window state persistence, and installer metadata.
 - Verify the packaged installer on an actual Windows 10 machine.
