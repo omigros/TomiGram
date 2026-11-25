@@ -2,7 +2,8 @@
 
 // TomiGram-specific Electron host. New implementation dated 2026-11-25.
 const { app, BrowserWindow, WebContentsView, ipcMain, shell, session } = require('electron');
-const path = require('node:path');\nconst { isSafeExternalUrl, isTrustedNavigation } = require('./navigation.cjs');
+const path = require('node:path');
+const { isSafeExternalUrl, isTrustedNavigation } = require('./navigation.cjs');
 
 const APP_NAME = 'TomiGram';
 const TOPBAR_HEIGHT = 64;
