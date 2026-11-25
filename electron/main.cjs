@@ -2,7 +2,7 @@
 
 // TomiGram-specific Electron host. New implementation dated 2026-11-25.
 const { app, BrowserWindow, WebContentsView, ipcMain, shell, session } = require('electron');
-const path = require('node:path');
+const path = require('node:path');\nconst { isSafeExternalUrl, isTrustedNavigation } = require('./navigation.cjs');
 
 const APP_NAME = 'TomiGram';
 const TOPBAR_HEIGHT = 64;
@@ -19,51 +19,20 @@ let activeMessenger = 'telegram';
 let switchInProgress = false;
 let switchTimer = null;
 
-function isWebUrl(value) {
-  try {
-    const url = new URL(value);
-    return url.protocol === 'https:' || url.protocol === 'http:';
-  } catch {
-    return false;
-  }
-}
-
 function attachSafeExternalHandling(view) {
   view.webContents.setWindowOpenHandler(({ url }) => {
-    if (isWebUrl(url)) void shell.openExternal(url);
+    if (isSafeExternalUrl(url)) void shell.openExternal(url);
     return { action: 'deny' };
   });
 
-  view.webContents.on('will-navigate', (event, url) => {
-    if (!isWebUrl(url)) {
-      event.preventDefault();
-      return;
-    }
-    try {
-      const destination = new URL(url);
-      const trusted = ['web.telegram.org', 'telegram.org', 't.me', 'telegram.me', 'vk.com', 'vk.ru', 'userapi.com', 'vkuseraudio.net'];
-      const allowed = trusted.some((host) => destination.hostname === host || destination.hostname.endsWith(`.${host}`));
-      if (!allowed) {
-        event.preventDefault();
-        void shell.openExternal(url);
-      }
-    } catch {
-      event.preventDefault();
-    }
-  });
+  const guardNavigation = (event, url) => {
+    if (isTrustedNavigation(url)) return;
+    event.preventDefault();
+    if (isSafeExternalUrl(url)) void shell.openExternal(url);
+  };
 
-  view.webContents.on('will-redirect', (event, url) => {
-    if (!isWebUrl(url)) {
-      event.preventDefault();
-      return;
-    }
-    const destination = new URL(url);
-    const trusted = ['web.telegram.org', 'telegram.org', 't.me', 'telegram.me', 'vk.com', 'vk.ru', 'userapi.com', 'vkuseraudio.net'];
-    if (!trusted.some((host) => destination.hostname === host || destination.hostname.endsWith(`.${host}`))) {
-      event.preventDefault();
-      void shell.openExternal(url);
-    }
-  });
+  view.webContents.on('will-navigate', guardNavigation);
+  view.webContents.on('will-redirect', guardNavigation);
 
   view.webContents.on('before-input-event', (event, input) => {
     if (input.type !== 'keyDown' || !input.control || input.alt || input.meta) return;
