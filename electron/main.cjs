@@ -50,6 +50,28 @@ function attachSafeExternalHandling(view) {
       event.preventDefault();
     }
   });
+
+  view.webContents.on('will-redirect', (event, url) => {
+    if (!isWebUrl(url)) {
+      event.preventDefault();
+      return;
+    }
+    const destination = new URL(url);
+    const trusted = ['web.telegram.org', 'telegram.org', 't.me', 'telegram.me', 'vk.com', 'vk.ru', 'userapi.com', 'vkuseraudio.net'];
+    if (!trusted.some((host) => destination.hostname === host || destination.hostname.endsWith(`.${host}`))) {
+      event.preventDefault();
+      void shell.openExternal(url);
+    }
+  });
+
+  view.webContents.on('before-input-event', (event, input) => {
+    if (input.type !== 'keyDown' || !input.control || input.alt || input.meta) return;
+    const key = input.key.toLowerCase();
+    if (key === '1' || key === '2') {
+      event.preventDefault();
+      void switchMessenger(key === '1' ? 'telegram' : 'vk');
+    }
+  });
 }
 
 function layoutViews() {
