@@ -16,6 +16,7 @@ let windowRef;
 const views = new Map();
 let activeMessenger = 'telegram';
 let switchInProgress = false;
+let switchTimer = null;
 
 function isWebUrl(value) {
   try {
