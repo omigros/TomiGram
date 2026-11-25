@@ -354,6 +354,7 @@ function createWindow() {
     minWidth: 760,
     minHeight: 560,
     title: APP_NAME,
+    icon: path.join(__dirname, '..', 'assets', 'tomigram.ico'),
     backgroundColor: '#212121',
     autoHideMenuBar: true,
     webPreferences: {
