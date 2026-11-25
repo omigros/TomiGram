@@ -20,6 +20,17 @@ git clone --recurse-submodules https://github.com/omigros/TomiGram.git
 
 For an existing clone, run `git submodule update --init --recursive`.
 
+## Local development
+
+Use Node.js 24 and npm 11 or later:
+
+```sh
+npm install
+npm start
+```
+
+Run the navigation/security checks with `npm test`. Create the Windows NSIS installer with `npm run dist:win`.
+
 The upstream project is GPL-3.0-or-later. Preserve its copyright and license notices in derivative files and clearly mark modifications. See `LICENSE`, `NOTICE.md`, and the pinned source.
 
 ## Implementation status
