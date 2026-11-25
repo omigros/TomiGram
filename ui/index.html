@@ -2,8 +2,8 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:;">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none';">
+  <meta name="viewport" content="width=device-width, initial-scale=1">\n  <meta name="theme-color" content="#11151d">
   <title>TomiGram</title>
   <link rel="stylesheet" href="./styles.css">
 </head>
@@ -11,15 +11,15 @@
   <header class="topbar">
     <div class="brand"><span class="brand-mark">T</span><span>TomiGram</span></div>
     <nav class="switcher" aria-label="Выбор мессенджера">
-      <button class="messenger active" data-messenger="telegram" aria-pressed="true">
+      <button class="messenger active" data-messenger="telegram" aria-pressed="true" title="Переключиться на Telegram (Ctrl+1)">
         <span class="telegram-icon">➤</span><span>Telegram</span>
       </button>
-      <button class="messenger" data-messenger="vk" aria-pressed="false">
+      <button class="messenger" data-messenger="vk" aria-pressed="false" title="Переключиться на ВКонтакте (Ctrl+2)">
         <span class="vk-icon">ᴠκ</span><span>ВКонтакте</span>
       </button>
     </nav>
     <div class="topbar-spacer"></div>
-    <span class="status"><i></i> Локальные сессии</span>
+    <span class="status"><i></i> Раздельные сессии</span>
   </header>
   <main class="stage">
     <div class="transition-layer" aria-hidden="true"></div>
