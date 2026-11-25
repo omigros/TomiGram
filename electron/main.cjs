@@ -1,11 +1,12 @@
 'use strict';
 
 // TomiGram-specific Electron host. New implementation dated 2026-11-25.
-const { app, BrowserWindow, WebContentsView, ipcMain, shell, session, dialog } = require('electron');
+const { app, BrowserWindow, WebContentsView, ipcMain, shell, session, dialog, screen } = require('electron');
+const fs = require('node:fs');
 const path = require('node:path');
 const { isSafeExternalUrl, isTrustedNavigation } = require('./navigation.cjs');
 const { sanitizeDownloadFilename } = require('./downloads.cjs');
-const { getRecoveryDelay, isAutomaticallyAllowedPermission } = require('./runtime-policy.cjs');
+const { getRecoveryDelay, isAutomaticallyAllowedPermission, normalizeWindowState } = require('./runtime-policy.cjs');
 
 const APP_NAME = 'TomiGram';
 const TOPBAR_HEIGHT = 64;
@@ -25,6 +26,39 @@ let isQuitting = false;
 let activeMessenger = 'telegram';
 let switchInProgress = false;
 let switchTimer = null;
+let windowStateSaveTimer = null;
+
+const WINDOW_STATE_PATH = () => path.join(app.getPath('userData'), 'window-state.json');
+
+function readWindowState() {
+  try {
+    return JSON.parse(fs.readFileSync(WINDOW_STATE_PATH(), 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function saveWindowState() {
+  if (!windowRef || windowRef.isDestroyed()) return;
+  const bounds = windowRef.isMaximized() ? windowRef.getNormalBounds() : windowRef.getBounds();
+  const state = { bounds, maximized: windowRef.isMaximized() };
+  try {
+    const destination = WINDOW_STATE_PATH();
+    const temporary = `${destination}.tmp`;
+    fs.writeFileSync(temporary, JSON.stringify(state), { mode: 0o600 });
+    fs.renameSync(temporary, destination);
+  } catch (error) {
+    console.warn('[TomiGram] Could not save window state:', error);
+  }
+}
+
+function scheduleWindowStateSave() {
+  if (windowStateSaveTimer) clearTimeout(windowStateSaveTimer);
+  windowStateSaveTimer = setTimeout(() => {
+    windowStateSaveTimer = null;
+    saveWindowState();
+  }, 250);
+}
 
 function attachSafeExternalHandling(view) {
   view.webContents.setWindowOpenHandler(({ url }) => {
@@ -253,9 +287,9 @@ function createMessengerView(id, config) {
 }
 
 function createWindow() {
+  const restored = normalizeWindowState(readWindowState(), screen.getAllDisplays());
   windowRef = new BrowserWindow({
-    width: 1360,
-    height: 900,
+    ...restored.bounds,
     minWidth: 760,
     minHeight: 560,
     title: APP_NAME,
@@ -269,9 +303,17 @@ function createWindow() {
     },
   });
 
+  if (restored.maximized) windowRef.maximize();
   windowRef.loadFile(path.join(__dirname, '..', 'ui', 'index.html'));
-  windowRef.on('resize', layoutViews);
+  windowRef.on('resize', () => {
+    layoutViews();
+    scheduleWindowStateSave();
+  });
+  windowRef.on('move', scheduleWindowStateSave);
+  windowRef.on('close', saveWindowState);
   windowRef.on('closed', () => {
+    if (windowStateSaveTimer) clearTimeout(windowStateSaveTimer);
+    windowStateSaveTimer = null;
     if (switchTimer) clearTimeout(switchTimer);
     switchTimer = null;
     switchInProgress = false;
