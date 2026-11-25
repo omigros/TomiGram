@@ -14,6 +14,7 @@ const MESSENGERS = {
 
 let windowRef;
 const views = new Map();
+const loadedViews = new Set();
 let activeMessenger = 'telegram';
 let switchInProgress = false;
 let switchTimer = null;
@@ -88,7 +89,7 @@ function layoutViews() {
 }
 
 function setActiveView(id) {
-  for (const [key, view] of views) view.setVisible(key === id);
+  for (const [key, view] of views) view.setVisible(key === id && loadedViews.has(key));
   activeMessenger = id;
 }
 
@@ -125,9 +126,23 @@ function createMessengerView(id, config) {
   });
   views.set(id, view);
   windowRef.contentView.addChildView(view);
-  view.setVisible(id === activeMessenger);
+  // Keep the native surface hidden until its first document has rendered.
+  view.setVisible(false);
   attachSafeExternalHandling(view);
-  view.webContents.loadURL(config.url);
+  view.webContents.once('did-finish-load', () => {
+    loadedViews.add(id);
+    if (id === activeMessenger && windowRef && !windowRef.isDestroyed()) {
+      view.setVisible(true);
+      layoutViews();
+    }
+  });
+  view.webContents.on('render-process-gone', () => {
+    loadedViews.delete(id);
+    view.setVisible(false);
+  });
+  view.webContents.loadURL(config.url).catch((error) => {
+    console.error(`[TomiGram] Failed to load ${id}:`, error);
+  });
 }
 
 function createWindow() {
@@ -155,6 +170,7 @@ function createWindow() {
     switchInProgress = false;
     for (const view of views.values()) view.webContents.close();
     views.clear();
+    loadedViews.clear();
     windowRef = null;
   });
 
