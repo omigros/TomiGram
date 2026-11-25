@@ -1,30 +1,31 @@
 # TomiGram
 
-**TomiGram** is a Windows desktop shell that brings Telegram and VK into one application.
+TomiGram is a Windows desktop workspace for Telegram and VK, based on Abudjagram.
 
-## Project direction
+## Product goals
 
-TomiGram is being developed as a separate project based on [Abudjagram](https://github.com/omigros/abudjagram), preserving its visual identity and adapting its Electron/React architecture.
+- Windows 10; Electron + React + TypeScript.
+- Compact Telegram/VK switcher above the active messenger workspace.
+- Independent persistent sessions and short transitions.
+- Official Telegram Web and VK Web clients; no custom API credentials.
+- Preserve Abudjagram's themes, styles, backgrounds, and settings.
 
-### Goals
+## Upstream source
 
-- Windows 10 desktop application.
-- Compact top switcher for Telegram and VK, with the selected messenger shown in the main workspace.
-- Independent persistent browser sessions for Telegram and VK.
-- Smooth, short transitions when switching between messengers.
-- Telegram through the official Telegram Web experience; no custom `api_id` or `api_hash`.
-- VK through its official web interface; no VK API application credentials.
-- Reuse Abudjagram's styling, backgrounds, patterns, and relevant settings.
-- Keep Electron + TypeScript/React as the primary desktop stack. Introduce Rust only for concrete system-level or performance needs.
+The complete Abudjagram repository is pinned as a Git submodule at `upstream/abudjagram`.
 
-## Important limitations
+```sh
+git clone --recurse-submodules https://github.com/omigros/TomiGram.git
+```
 
-TomiGram does not use Telegram or VK API credentials. Available features therefore depend on the capabilities and policies of the official web clients. This project is not affiliated with Telegram or VK.
+For an existing clone: `git submodule update --init --recursive`. Windows CI checks out submodules recursively.
 
-## Development status
+## Status
 
-Repository initialized. The Abudjagram codebase has not yet been imported or adapted.
+Upstream source and selected original visual assets are staged, but are not yet integrated into the TomiGram runtime. The root application remains an independent Electron prototype. Dual-client integration and a user-tested release are outstanding.
+
+TomiGram does not request Telegram or VK API credentials. Available functionality depends on the official web clients and their policies. The project is not affiliated with Telegram or VK.
 
 ## License
 
-Abudjagram is distributed under GPL-3.0. TomiGram's derivative code must retain applicable copyright and license notices and comply with GPL-3.0. See the upstream [Abudjagram repository](https://github.com/omigros/abudjagram) for the original license and notices.
+Abudjagram is GPL-3.0-or-later. Preserve upstream copyright and license notices in derivative files and mark modifications. See `LICENSE`, `NOTICE.md`, and the pinned upstream repository.
