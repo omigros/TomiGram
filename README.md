@@ -8,6 +8,7 @@ TomiGram is a Windows desktop workspace that places Telegram and VK behind one c
 - VK is loaded from the official VK website; sign-in is handled by VK.
 - No custom Telegram `api_id` / `api_hash`, VK application credentials, or TDLib.
 - Each service uses its own persistent Chromium session.
+- The system tray can reopen the app, switch messengers, or quit; closing the window hides TomiGram to the tray.
 - The active messenger occupies the workspace below the compact top switcher.
 
 ## Upstream source
