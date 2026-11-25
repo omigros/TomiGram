@@ -2,67 +2,70 @@
 
 ## Baseline
 
-- Upstream: https://github.com/omigros/abudjagram
-- Upstream license: GPL-3.0
-- Desktop runtime: Electron
-- UI: React + TypeScript + Vite
-- Target: Windows 10
+- Upstream source: [Abudjagram](https://github.com/omigros/abudjagram), pinned in `upstream/abudjagram`.
+- Upstream license: GPL-3.0-or-later.
+- Desktop runtime: Electron.
+- TomiGram root renderer: lightweight HTML/CSS/JavaScript shell.
+- Target: Windows 10.
+- Embedded clients: official Telegram Web and VK web messaging.
 
-The first implementation should preserve the upstream application's existing build and runtime conventions rather than replacing its desktop stack.
+The upstream source is retained in full for provenance, licensing, and selective reuse. Its React Telegram renderer is not a drop-in runtime for TomiGram: its startup path requires Telegram API credentials and presents a credentials setup screen when they are absent. TomiGram must not add that requirement. Reuse visual assets and independent components only where compatible with the no-credentials product constraint.
 
 ## Application layout
 
-1. A narrow, full-width messenger switcher at the top of the window.
+1. A compact full-width messenger switcher at the top of the window.
 2. Two compact tiles: Telegram and VK.
-3. A single large content region below the switcher.
-4. A short transition when changing the active messenger (fade, slight horizontal translation, and a restrained blur overlay).
+3. One large content region below the switcher.
+4. A short fade/blur transition when changing the active messenger.
 
 ## Web session isolation
 
-Use separate persistent Electron session partitions for the two services. Keep both web contents alive while switching visibility so that switching does not sign the user out or force a full page reload.
-
-Recommended starting partitions:
+Use separate persistent Electron session partitions:
 
 - `persist:tomigram-telegram`
 - `persist:tomigram-vk`
 
-The implementation must keep the preload surface minimal, enable context isolation, disable renderer Node integration, validate navigation targets, and open unrelated external links in the system browser.
+Keep both `WebContentsView` instances alive while switching visibility. Use context isolation, disabled renderer Node integration, sandboxing, and web security. Maintain an explicit navigation host allowlist; send unrelated HTTP(S) destinations to the system browser and deny non-web protocols.
 
 ## Messenger integration
 
 ### Telegram
 
-Load the official Telegram Web client. Authentication is performed by Telegram's own web flow (QR code or phone number). Do not add custom Telegram API credentials or a TDLib dependency.
+Load `https://web.telegram.org/a/` in the Telegram partition. Authentication belongs to Telegram's official web flow (QR code or phone number). Do not introduce custom `api_id` / `api_hash`, GramJS, or TDLib.
 
 ### VK
 
-Load VK's official web messaging experience in its own persistent session. Authentication is performed by VK's website. Feature parity is limited to what VK exposes through its web client.
+Load `https://vk.com/im` in the VK partition. Authentication belongs to VK's official website. The supported feature set is limited to what VK exposes through its web client. Navigation and media host allowlists must be validated against real sign-in and chat flows.
 
-## UI reuse
+## Visual reuse
 
-Reuse the upstream Abudjagram styles, theme variables, pattern/background assets, and settings where practical. Preserve upstream copyright notices and GPL-3.0 license terms in all derivative files.
+The original Abudjagram pattern SVG is used as a subtle shell background mask. Further reuse may include theme tokens, color palettes, and settings concepts, but derivative files must preserve applicable copyright/license notices and clearly mark modifications. Do not import upstream code paths that introduce Telegram API credentials.
 
 ## Switching and lifecycle
 
-- Keep both web contents mounted/alive after first initialization.
-- Switch visibility and input focus without destroying the inactive session.
-- Avoid unnecessary background timers and media activity where possible.
-- Do not apply CSS filters directly to a native WebContentsView; use a window-level overlay/transition layer for the visual effect.
+- Create both web contents once and retain them while the window remains open.
+- Hide the inactive native view instead of destroying it.
+- Keep the native view bounds aligned with the compact topbar height.
+- Avoid applying CSS filters directly to native `WebContentsView`; use a renderer overlay for transition effects.
+- Handle renderer crashes, load failures, and window teardown explicitly.
+
+## Security and product follow-up
+
+- Add explicit permission handling for camera, microphone, notifications, and media devices.
+- Add safe download handling and file destination confirmation.
+- Validate all VK and Telegram redirect/resource host requirements using actual browser sessions.
+- Keep the preload API narrow and avoid exposing arbitrary IPC.
 
 ## Rust policy
 
-Do not introduce Rust solely as a presumed performance optimization. Electron/Chromium renders the messenger websites. Consider Rust later only for measured CPU-intensive work or well-defined native/system integrations.
+Do not introduce Rust as a presumed performance optimization. Chromium performs messenger rendering. Consider Rust only for measured CPU-intensive tasks or a concrete native integration requirement.
 
 ## Milestones
 
-1. Import the upstream source with Git history and license notices intact.
-2. Establish a reproducible Windows development/build workflow.
-3. Add the two-session Electron shell and top-level switcher.
-4. Integrate Telegram Web and VK web messaging.
-5. Reuse Abudjagram's visual assets and settings.
-6. Implement lifecycle handling, notifications, downloads, permissions, and external-link policy.
-7. Build and test on Windows 10; document known web-client limitations.
-
-## Current status
-
-Only the repository overview and this architecture plan are committed so far. The upstream source has not yet been imported, and no Windows build has been produced or tested.
+1. Preserve full upstream source and license history: pinned submodule established.
+2. Establish reproducible Windows packaging: CI installer build succeeds.
+3. Implement two isolated web sessions and the switcher: initial shell implemented.
+4. Validate authentication and web-client compatibility on Windows 10: outstanding.
+5. Adapt additional upstream visual tokens/settings without API-credential coupling: outstanding.
+6. Add permissions, downloads, notifications, crash recovery, and focused tests: outstanding.
+7. Test installer interactively on Windows 10: outstanding.
