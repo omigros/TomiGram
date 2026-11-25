@@ -404,9 +404,9 @@ function createWindow() {
 app.whenReady().then(() => {
   ipcMain.handle('messenger:switch', (_event, id) => switchMessenger(id));
   ipcMain.handle('messenger:active', () => activeMessenger);
+  app.setAppUserModelId('com.tomigram.desktop');
   createWindow();
   createTray();
-  app.setAppUserModelId('com.tomigram.desktop');
   app.on('activate', () => showMainWindow());
 });
 
