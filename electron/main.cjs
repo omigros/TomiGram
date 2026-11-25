@@ -5,6 +5,7 @@ const { app, BrowserWindow, WebContentsView, ipcMain, shell, session, dialog } =
 const path = require('node:path');
 const { isSafeExternalUrl, isTrustedNavigation } = require('./navigation.cjs');
 const { sanitizeDownloadFilename } = require('./downloads.cjs');
+const { getRecoveryDelay, isAutomaticallyAllowedPermission } = require('./runtime-policy.cjs');
 
 const APP_NAME = 'TomiGram';
 const TOPBAR_HEIGHT = 64;
@@ -17,6 +18,9 @@ const MESSENGERS = {
 let windowRef;
 const views = new Map();
 const loadedViews = new Set();
+const recoveryTimers = new Map();
+const recoveryAttempts = new Map();
+let isQuitting = false;
 let activeMessenger = 'telegram';
 let switchInProgress = false;
 let switchTimer = null;
@@ -121,9 +125,79 @@ function configureDownloads(partitionSession, messengerId) {
   });
 }
 
+function configurePermissions(partitionSession, messengerId) {
+  partitionSession.setPermissionCheckHandler((webContents, permission, requestingOrigin) => {
+    const url = requestingOrigin || webContents?.getURL() || '';
+    return isAutomaticallyAllowedPermission(permission, url, isTrustedNavigation);
+  });
+
+  partitionSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
+    const requestingUrl = details?.requestingUrl || webContents?.getURL() || '';
+    if (!isTrustedNavigation(requestingUrl)) {
+      callback(false);
+      return;
+    }
+
+    if (isAutomaticallyAllowedPermission(permission, requestingUrl, isTrustedNavigation)) {
+      callback(true);
+      return;
+    }
+
+    const mediaPermissions = new Set(['media', 'camera', 'microphone']);
+    if (!mediaPermissions.has(permission)) {
+      callback(false);
+      return;
+    }
+
+    const mediaTypes = details?.mediaTypes || [];
+    const requested = mediaTypes.length
+      ? mediaTypes.join(' and ')
+      : permission === 'media' ? 'camera and microphone' : permission;
+    const parent = windowRef && !windowRef.isDestroyed() ? windowRef : null;
+    const options = {
+      type: 'question',
+      title: `Allow ${messengerId} access?`,
+      message: `${messengerId.toUpperCase()} is requesting access to ${requested}.`,
+      detail: 'Allow access only if you started a call or recording and trust this page.',
+      buttons: ['Allow', 'Deny'],
+      defaultId: 1,
+      cancelId: 1,
+      noLink: true,
+    };
+    const prompt = parent
+      ? dialog.showMessageBox(parent, options)
+      : dialog.showMessageBox(options);
+    prompt.then(({ response }) => callback(response === 0)).catch((error) => {
+      console.error(`[TomiGram] Permission prompt failed for ${messengerId}:`, error);
+      callback(false);
+    });
+  });
+}
+
+function scheduleViewRecovery(id, reason) {
+  const view = views.get(id);
+  if (!view || isQuitting || recoveryTimers.has(id) || view.webContents.isDestroyed()) return;
+
+  loadedViews.delete(id);
+  view.setVisible(false);
+  const attempt = recoveryAttempts.get(id) || 0;
+  const delay = getRecoveryDelay(attempt);
+  recoveryAttempts.set(id, attempt + 1);
+  console.warn(`[TomiGram] Recovering ${id} renderer after ${reason}; retry in ${delay}ms`);
+
+  const timer = setTimeout(() => {
+    recoveryTimers.delete(id);
+    const currentView = views.get(id);
+    if (!currentView || isQuitting || currentView.webContents.isDestroyed()) return;
+    currentView.webContents.reload();
+  }, delay);
+  recoveryTimers.set(id, timer);
+}
+
 function createMessengerView(id, config) {
   const partitionSession = session.fromPartition(config.partition);
   configureDownloads(partitionSession, id);
+  configurePermissions(partitionSession, id);
   const view = new WebContentsView({
     webPreferences: {
       session: partitionSession,
@@ -138,19 +212,34 @@ function createMessengerView(id, config) {
   // Keep the native surface hidden until its first document has rendered.
   view.setVisible(false);
   attachSafeExternalHandling(view);
-  view.webContents.once('did-finish-load', () => {
+  view.webContents.on('did-finish-load', () => {
+    const timer = recoveryTimers.get(id);
+    if (timer) clearTimeout(timer);
+    recoveryTimers.delete(id);
+    recoveryAttempts.delete(id);
     loadedViews.add(id);
     if (id === activeMessenger && windowRef && !windowRef.isDestroyed()) {
       view.setVisible(true);
       layoutViews();
     }
   });
-  view.webContents.on('render-process-gone', () => {
-    loadedViews.delete(id);
-    view.setVisible(false);
+  view.webContents.on('render-process-gone', (_event, details) => {
+    scheduleViewRecovery(id, `renderer exit (${details?.reason || 'unknown'})`);
+  });
+  view.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+    if (isMainFrame && errorCode !== -3) {
+      scheduleViewRecovery(id, `load error ${errorCode}: ${errorDescription}`);
+    }
+  });
+  view.webContents.on('unresponsive', () => {
+    console.warn(`[TomiGram] ${id} renderer is unresponsive`);
+  });
+  view.webContents.on('responsive', () => {
+    console.info(`[TomiGram] ${id} renderer recovered responsiveness`);
   });
   view.webContents.loadURL(config.url).catch((error) => {
     console.error(`[TomiGram] Failed to load ${id}:`, error);
+    scheduleViewRecovery(id, 'initial navigation failure');
   });
 }
 
@@ -177,6 +266,9 @@ function createWindow() {
     if (switchTimer) clearTimeout(switchTimer);
     switchTimer = null;
     switchInProgress = false;
+    for (const timer of recoveryTimers.values()) clearTimeout(timer);
+    recoveryTimers.clear();
+    recoveryAttempts.clear();
     for (const view of views.values()) view.webContents.close();
     views.clear();
     loadedViews.clear();
@@ -199,6 +291,9 @@ app.whenReady().then(() => {
 });
 
 app.on('before-quit', () => {
+  isQuitting = true;
+  for (const timer of recoveryTimers.values()) clearTimeout(timer);
+  recoveryTimers.clear();
   if (switchTimer) clearTimeout(switchTimer);
   switchTimer = null;
 });
