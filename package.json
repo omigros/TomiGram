@@ -22,6 +22,7 @@
     "files": [
       "electron/**/*",
       "ui/**/*",
+      "upstream/abudjagram/src/assets/pattern.svg",
       "package.json",
       "LICENSE",
       "NOTICE.md"
