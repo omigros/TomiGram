@@ -26,7 +26,7 @@ function isTrustedHost(hostname) {
 
 function isTrustedNavigation(value) {
   const url = parseWebUrl(value);
-  return Boolean(url && isTrustedHost(url.hostname));
+  return Boolean(url && url.protocol === 'https:' && isTrustedHost(url.hostname));
 }
 
 function isSafeExternalUrl(value) {
