@@ -105,6 +105,22 @@ function setActiveView(id) {
   updateTrayMenu();
 }
 
+function disposeMessengerView(id) {
+  const view = views.get(id);
+  if (!view) return;
+  view.setVisible(false);
+  windowRef?.contentView.removeChildView(view);
+  if (!view.webContents.isDestroyed()) view.webContents.close();
+  views.delete(id);
+  loadedViews.delete(id);
+  for (const timers of [recoveryTimers, recoveryStableTimers]) {
+    const timer = timers.get(id);
+    if (timer) clearTimeout(timer);
+    timers.delete(id);
+  }
+  recoveryAttempts.delete(id);
+}
+
 function showMainWindow() {
   if (!windowRef || windowRef.isDestroyed()) {
     createWindow();
@@ -177,7 +193,10 @@ async function switchMessenger(id) {
       switchInProgress = false;
       return;
     }
-    setActiveView(id);
+    disposeMessengerView(activeMessenger);
+    activeMessenger = id;
+    updateTrayMenu();
+    createMessengerView(id, MESSENGERS[id]);
     layoutViews();
     windowRef.webContents.send('messenger:changed', id);
     switchInProgress = false;
@@ -397,7 +416,7 @@ function createWindow() {
   });
 
   windowRef.webContents.once('did-finish-load', () => {
-    for (const [id, config] of Object.entries(MESSENGERS)) createMessengerView(id, config);
+    createMessengerView(activeMessenger, MESSENGERS[activeMessenger]);
     layoutViews();
   });
 }
