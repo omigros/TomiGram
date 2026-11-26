@@ -9,7 +9,7 @@ const { sanitizeDownloadFilename } = require('./downloads.cjs');
 const { getRecoveryDelay, isAutomaticallyAllowedPermission, normalizeWindowState } = require('./runtime-policy.cjs');
 
 const APP_NAME = 'TomiGram';
-const TOPBAR_HEIGHT = 64;
+const TOPBAR_HEIGHT = 104;
 const TRANSITION_MS = 180;
 const MESSENGERS = {
   telegram: { url: 'https://web.telegram.org/a/', partition: 'persist:tomigram-telegram' },
@@ -374,6 +374,8 @@ function createWindow() {
     minHeight: 560,
     title: APP_NAME,
     icon: path.join(__dirname, '..', 'assets', 'tomigram.ico'),
+    frame: false,
+    titleBarStyle: 'hidden',
     backgroundColor: '#212121',
     autoHideMenuBar: true,
     webPreferences: {
@@ -424,6 +426,9 @@ function createWindow() {
 app.whenReady().then(() => {
   ipcMain.handle('messenger:switch', (_event, id) => switchMessenger(id));
   ipcMain.handle('messenger:active', () => activeMessenger);
+  ipcMain.handle('window:minimize', () => windowRef?.minimize());
+  ipcMain.handle('window:toggle-maximize', () => windowRef?.isMaximized() ? windowRef.unmaximize() : windowRef?.maximize());
+  ipcMain.handle('window:close', () => windowRef?.close());
   app.setAppUserModelId('com.tomigram.desktop');
   createWindow();
   createTray();
