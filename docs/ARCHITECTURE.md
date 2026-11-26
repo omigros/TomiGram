@@ -39,7 +39,7 @@ Load `https://vk.com/im` in the VK partition. Authentication belongs to VK's off
 
 ## Visual reuse
 
-The original Abudjagram pattern SVG is used as a subtle shell background mask. Further reuse may include theme tokens, color palettes, and settings concepts, but derivative files must preserve applicable copyright/license notices and clearly mark modifications. Do not import upstream code paths that introduce Telegram API credentials.
+The shell uses a compact VK-inspired light/dark palette, a branded frameless titlebar, and an appearance panel. Abudjagram app/tray icon variants are available through the icon selector. The embedded Telegram/VK websites still own their internal page themes; the shell palette does not forcibly recolor third-party web content. Derivative files must preserve applicable copyright/license notices and clearly mark modifications. Do not import upstream code paths that introduce Telegram API credentials.
 
 ## Switching and lifecycle
 
@@ -66,6 +66,6 @@ Do not introduce Rust as a presumed performance optimization. Chromium performs 
 2. Establish reproducible Windows packaging: CI installer build succeeds.
 3. Implement two isolated web sessions and the switcher: initial shell implemented.
 4. Validate authentication and web-client compatibility on Windows 10: outstanding.
-5. Adapt additional upstream visual tokens/settings without API-credential coupling: outstanding.
+5. Add VK-inspired light/dark shell palettes, branded window chrome, and Abudjagram app-icon selection: implemented; embedded web-client theming remains controlled by each website.
 6. Add permissions, downloads, notifications, crash recovery, and focused tests: outstanding.
 7. Test installer interactively on Windows 10: outstanding.
