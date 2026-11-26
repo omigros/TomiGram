@@ -10,6 +10,13 @@ const { getRecoveryDelay, isAutomaticallyAllowedPermission, normalizeWindowState
 
 const APP_NAME = 'TomiGram';
 const TOPBAR_HEIGHT = 104;
+const ICONS = ['girl-A', 'girl-B', 'girl-C'];
+const SETTINGS_PATH = () => path.join(app.getPath('userData'), 'settings.json');
+function readSettings() { try { return JSON.parse(fs.readFileSync(SETTINGS_PATH(), 'utf8')); } catch { return {}; } }
+function writeSettings(value) { const file = SETTINGS_PATH(); const temp = `${file}.tmp`; fs.writeFileSync(temp, JSON.stringify(value), { mode: 0o600 }); fs.renameSync(temp, file); }
+function selectedIcon() { const value = readSettings().icon; return ICONS.includes(value) ? value : 'girl-A'; }
+function appIconPath() { return path.join(__dirname, '..', 'upstream', 'abudjagram', 'electron', 'app-icons', `${selectedIcon()}.ico`); }
+function trayIconPath() { return path.join(__dirname, '..', 'upstream', 'abudjagram', 'electron', 'tray-icons', `${selectedIcon()}.png`); }
 const TRANSITION_MS = 180;
 const MESSENGERS = {
   telegram: { url: 'https://web.telegram.org/a/', partition: 'persist:tomigram-telegram' },
@@ -133,7 +140,7 @@ function showMainWindow() {
 
 function createTray() {
   if (trayRef) return;
-  const iconPath = path.join(__dirname, '..', 'assets', 'tomigram-tray.png');
+  const iconPath = trayIconPath();
   const icon = nativeImage.createFromPath(iconPath);
   if (icon.isEmpty()) {
     console.error('[TomiGram] Tray icon could not be loaded:', iconPath);
@@ -373,7 +380,7 @@ function createWindow() {
     minWidth: 760,
     minHeight: 560,
     title: APP_NAME,
-    icon: path.join(__dirname, '..', 'assets', 'tomigram.ico'),
+    icon: appIconPath(),
     frame: false,
     titleBarStyle: 'hidden',
     backgroundColor: '#212121',
@@ -429,6 +436,16 @@ app.whenReady().then(() => {
   ipcMain.handle('window:minimize', () => windowRef?.minimize());
   ipcMain.handle('window:toggle-maximize', () => windowRef?.isMaximized() ? windowRef.unmaximize() : windowRef?.maximize());
   ipcMain.handle('window:close', () => windowRef?.close());
+  ipcMain.handle('app:get-icon', () => selectedIcon());
+  ipcMain.handle('app:set-icon', (_event, id) => {
+    if (!ICONS.includes(id)) return false;
+    const settings = readSettings(); settings.icon = id; writeSettings(settings);
+    const trayImage = nativeImage.createFromPath(trayIconPath());
+    if (trayRef && !trayImage.isEmpty()) trayRef.setImage(trayImage);
+    const appImage = nativeImage.createFromPath(appIconPath());
+    if (windowRef && !appImage.isEmpty()) windowRef.setIcon(appImage);
+    return true;
+  });
   app.setAppUserModelId('com.tomigram.desktop');
   createWindow();
   createTray();
