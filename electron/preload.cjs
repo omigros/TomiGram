@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld('tomigram', {
   minimize: () => ipcRenderer.invoke('window:minimize'),
   toggleMaximize: () => ipcRenderer.invoke('window:toggle-maximize'),
   closeWindow: () => ipcRenderer.invoke('window:close'),
+  getAppIcon: () => ipcRenderer.invoke('app:get-icon'),
+  setAppIcon: (id) => ipcRenderer.invoke('app:set-icon', id),
   onTransitionStart: (callback) => {
     const listener = (_event, id) => callback(id);
     ipcRenderer.on('messenger:transition-start', listener);
