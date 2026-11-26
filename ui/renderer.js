@@ -1,35 +1,10 @@
 'use strict';
-
-const buttons = [...document.querySelectorAll('[data-messenger]')];
-let transitionTimer;
-
-function selectButton(id) {
-  for (const button of buttons) {
-    const selected = button.dataset.messenger === id;
-    button.classList.toggle('active', selected);
-    button.setAttribute('aria-pressed', String(selected));
-  }
-}
-
-buttons.forEach((button) => {
-  button.addEventListener('click', async () => {
-    const id = button.dataset.messenger;
-    if (button.classList.contains('active')) return;
-    selectButton(id);
-    document.body.classList.add('switching');
-    clearTimeout(transitionTimer);
-    transitionTimer = setTimeout(() => document.body.classList.remove('switching'), 240);
-    try {
-      await window.tomigram.switchMessenger(id);
-    } catch (error) {
-      console.error('Unable to switch messenger', error);
-      document.body.classList.remove('switching');
-    }
-  });
-});
-
-window.tomigram.getActiveMessenger().then(selectButton);
-window.tomigram.onMessengerChanged((id) => {
-  selectButton(id);
-  document.body.classList.remove('switching');
-});
+const buttons=[...document.querySelectorAll('[data-messenger]')],panel=document.getElementById('settings-panel'),toggle=document.getElementById('settings-toggle');let transitionTimer;
+function selectButton(id){buttons.forEach(button=>{const active=button.dataset.messenger===id;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));});}
+function applyTheme(theme){const value=theme==='dark'?'dark':'light';document.body.dataset.theme=value;localStorage.setItem('tomigram-theme',value);document.querySelectorAll('[data-theme-choice]').forEach(b=>b.classList.toggle('selected',b.dataset.themeChoice===value));}
+buttons.forEach(button=>button.addEventListener('click',async()=>{const id=button.dataset.messenger;if(button.classList.contains('active'))return;selectButton(id);document.body.classList.add('switching');clearTimeout(transitionTimer);transitionTimer=setTimeout(()=>document.body.classList.remove('switching'),260);try{await window.tomigram.switchMessenger(id);}catch(error){console.error(error);document.body.classList.remove('switching');}}));
+toggle.addEventListener('click',()=>{panel.hidden=!panel.hidden;});
+document.querySelectorAll('[data-theme-choice]').forEach(b=>b.addEventListener('click',()=>applyTheme(b.dataset.themeChoice)));
+document.addEventListener('pointerdown',e=>{if(!panel.hidden&&!panel.contains(e.target)&&!toggle.contains(e.target))panel.hidden=true;});
+document.querySelector('.minimize').addEventListener('click',()=>window.tomigram.minimize());document.querySelector('.maximize').addEventListener('click',()=>window.tomigram.toggleMaximize());document.querySelector('.close').addEventListener('click',()=>window.tomigram.closeWindow());document.querySelector('.titlebar').addEventListener('dblclick',e=>{if(!e.target.closest('.window-controls'))window.tomigram.toggleMaximize();});
+applyTheme(localStorage.getItem('tomigram-theme')||'light');window.tomigram.getActiveMessenger().then(selectButton);window.tomigram.onMessengerChanged(id=>{selectButton(id);document.body.classList.remove('switching');});
