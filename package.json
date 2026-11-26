@@ -27,7 +27,9 @@
       "upstream/abudjagram/src/assets/pattern.svg",
       "package.json",
       "LICENSE",
-      "NOTICE.md"
+      "NOTICE.md",
+      "upstream/abudjagram/electron/app-icons/**/*",
+      "upstream/abudjagram/electron/tray-icons/**/*"
     ],
     "win": {
       "target": [
